@@ -8,7 +8,6 @@ require('dotenv').config();
 const firebaseConfig = require('./firebase/config');
 const debateRoutes = require('./routes/debates');
 const agentRoutes = require('./routes/agents');
-const analysisRoutes = require('./routes/analysis');
 const userRoutes = require('./routes/users');
 const { initializeSocketHandlers } = require('./sockets/debateSocket');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
@@ -19,7 +18,7 @@ const app = express();
 const server = createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    origin: process.env.FRONTEND_URL || "http://localhost:3001",
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     credentials: true,
     allowedHeaders: ["Content-Type", "Authorization"]
@@ -52,9 +51,6 @@ app.get('/health', (req, res) => {
 // API Routes
 app.use('/api/debates', debateRoutes);
 app.use('/api/agents', agentRoutes);
-
-// API Routes
-app.use('/api/analysis', analysisRoutes);
 app.use('/api/users', userRoutes);
 // Track B Live Simulated Mock Debates
 app.use('/api/trackb', require('./routes/trackB'));
