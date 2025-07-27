@@ -1,0 +1,34 @@
+{
+  "project_info": {
+    "project_number": "468635489532",
+    "project_id": "ai-debate-platform-93397",
+    "storage_bucket": "ai-debate-platform-93397.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:468635489532:android:5df6fcad83a57a2363f379",
+        "android_client_info": {
+          "package_name": "com.debateplatform.ai_debate_platform"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "468635489532-kvon9khkq08paa1h2j3enh6sptm3vei1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyASELAAl0BrvnZDbiKIWEvLO9lrOdqpiLY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

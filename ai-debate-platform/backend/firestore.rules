@@ -1,0 +1,113 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read and write their own user document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Debates - users can read public debates, write their own
+    match /debates/{debateId} {
+      allow read: if resource.data.isPublic == true || 
+                     (request.auth != null && 
+                      (request.auth.uid == resource.data.createdBy ||
+                       request.auth.uid in resource.data.participants[].id));
+      
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.createdBy;
+      
+      allow update: if request.auth != null && 
+                       (request.auth.uid == resource.data.createdBy ||
+                        request.auth.uid in resource.data.participants[].id);
+      
+      allow delete: if request.auth != null && 
+                       request.auth.uid == resource.data.createdBy;
+    }
+    
+    // Messages within debates
+    match /debates/{debateId}/messages/{messageId} {
+      allow read: if request.auth != null && 
+                     (request.auth.uid == get(/databases/$(database)/documents/debates/$(debateId)).data.createdBy ||
+                      request.auth.uid in get(/databases/$(database)/documents/debates/$(debateId)).data.participants[].id);
+      
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.senderId;
+      
+      allow update, delete: if request.auth != null && 
+                               request.auth.uid == resource.data.senderId;
+    }
+    
+    // AI Agents - read-only for authenticated users
+    match /agents/{agentId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only server can create/update agents
+    }
+    
+    // Analysis data - read-only for participants
+    match /analysis/{analysisId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only server can create analysis
+    }
+    
+    // Sessions - participants can read their sessions
+    match /sessions/{sessionId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid in resource.data.participants;
+      allow write: if false; // Only server manages sessions
+    }
+    
+    // Feedback - users can read/write their own feedback
+    match /feedback/{feedbackId} {
+      allow read, write: if request.auth != null && 
+                            request.auth.uid == resource.data.userId;
+    }
+    
+    // Track B specific collections
+    match /debate_sessions/{sessionId} {
+      allow read: if request.auth != null && 
+                     (request.auth.uid == resource.data.createdBy ||
+                      request.auth.uid in resource.data.participants[].id);
+      
+      allow create: if request.auth != null && 
+                       request.auth.uid == request.resource.data.createdBy;
+      
+      allow update: if request.auth != null && 
+                       (request.auth.uid == resource.data.createdBy ||
+                        request.auth.uid in resource.data.participants[].id);
+    }
+    
+    match /judgments/{judgmentId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Only AI adjudicator can create judgments
+    }
+    
+    match /case_preparations/{prepId} {
+      allow read, write: if request.auth != null && 
+                            request.auth.uid == resource.data.userId;
+    }
+    
+    match /note_tracking/{noteId} {
+      allow read, write: if request.auth != null && 
+                            request.auth.uid == resource.data.userId;
+    }
+    
+    match /real_time_feedback/{feedbackId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.userId;
+      allow write: if false; // Only server provides real-time feedback
+    }
+    
+    match /performance_reports/{reportId} {
+      allow read: if request.auth != null && 
+                     request.auth.uid == resource.data.userId;
+      allow write: if false; // Only server generates reports
+    }
+    
+    match /transcripts/{transcriptId} {
+      allow read: if request.auth != null && 
+                     (request.auth.uid == resource.data.createdBy ||
+                      request.auth.uid in resource.data.participants);
+      allow write: if false; // Only server creates transcripts
+    }
+  }
+}
