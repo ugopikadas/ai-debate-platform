@@ -396,6 +396,13 @@ export const SocketProvider = ({ children }) => {
     setTypingUsers([]);
   }, []);
 
+  // Function to load messages from debate data (for demo mode)
+  const loadDebateMessages = useCallback((messages) => {
+    if (Array.isArray(messages)) {
+      setDebateMessages(messages);
+    }
+  }, []);
+
   const value = {
     socket,
     connected,
@@ -411,7 +418,8 @@ export const SocketProvider = ({ children }) => {
     requestFeedback,
     startTyping,
     stopTyping,
-    leaveDebate
+    leaveDebate,
+    loadDebateMessages
   };
 
   return (

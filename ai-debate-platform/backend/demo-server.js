@@ -36,6 +36,7 @@ const demoDebates = [
     motion: 'This house believes that AI should replace human decision-making in critical areas',
     status: 'active',
     phase: 'opening',
+    currentPhase: 'debate',
     timeRemaining: 300,
     participants: [
       {

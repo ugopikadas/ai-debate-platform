@@ -58,7 +58,8 @@ const DebateRoomPage = () => {
     debateMessages,
     realTimeAnalysis,
     typingUsers,
-    connected
+    connected,
+    loadDebateMessages
   } = useSocket();
   
   const dispatch = useDispatch();
@@ -106,6 +107,26 @@ const DebateRoomPage = () => {
   useEffect(() => {
     scrollToBottom();
   }, [debateMessages]);
+
+  // Load messages from debate data if available (for demo mode)
+  useEffect(() => {
+    if (debate && debate.messages && Array.isArray(debate.messages) && debateMessages.length === 0) {
+      // Convert debate messages to the format expected by the socket context
+      const formattedMessages = debate.messages.map(msg => ({
+        id: msg.id,
+        content: msg.content,
+        speakerId: msg.speakerId,
+        speakerName: msg.speakerName,
+        speakerRole: msg.speakerRole,
+        speakerType: msg.speakerType || 'human',
+        timestamp: msg.timestamp,
+        phase: msg.phase || 'debate'
+      }));
+
+      // Load messages using the socket context function
+      loadDebateMessages(formattedMessages);
+    }
+  }, [debate, debateMessages.length, loadDebateMessages]);
 
   useEffect(() => {
     // Timer for preparation phase
@@ -458,8 +479,8 @@ const DebateRoomPage = () => {
 
             {/* Messages Area */}
             <Box sx={{ flexGrow: 1, overflow: 'auto', p: 2 }}>
-              {/* Show placeholder when no messages and in preparing state */}
-              {(!debateMessages || debateMessages.length === 0) && debate.status === 'preparing' && (
+              {/* Show placeholder when no messages */}
+              {(!debateMessages || debateMessages.length === 0) && (
                 <Box sx={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -476,7 +497,10 @@ const DebateRoomPage = () => {
                     <strong>Motion:</strong> {debate?.motion || 'Loading...'}
                   </Typography>
                   <Typography variant="body2" sx={{ mb: 3 }}>
-                    Waiting for participants to join and begin the debate...
+                    {debate?.status === 'preparing'
+                      ? 'Waiting for participants to join and begin the debate...'
+                      : 'No messages yet. Start the conversation!'
+                    }
                   </Typography>
                   {!userRole && (
                     <Typography variant="body2" color="primary">
