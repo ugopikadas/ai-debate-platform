@@ -233,11 +233,40 @@ const DebateRoomPage = () => {
     }
   };
 
-  const handleSendMessage = () => {
-    if (message.trim() && connected) {
-      sendMessage(id, message.trim());
+  const handleSendMessage = async () => {
+    if (!message.trim()) return;
+
+    try {
+      if (connected) {
+        // Try socket first
+        sendMessage(id, message.trim());
+      } else {
+        // Fallback to REST API
+        const response = await fetch(`http://localhost:5000/api/debates/${id}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            content: message.trim(),
+            phase: 'debate',
+            userId: user?.uid || 'demo-user-google-id'
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to send message');
+        }
+
+        // Refresh the debate to get the new message
+        dispatch(fetchDebateById(id));
+      }
+
       setMessage('');
       setIsTyping(false);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      toast.error('Failed to send message');
     }
   };
 

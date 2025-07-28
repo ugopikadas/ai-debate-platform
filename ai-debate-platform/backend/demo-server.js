@@ -275,23 +275,29 @@ app.post('/api/debates/:id/join', (req, res) => {
     });
   }
 
-  const { role } = req.body; // 'proposition' or 'opposition'
-  // In demo mode, use the authenticated user's info or default
-  const userId = req.headers.authorization ? 'authenticated-user' : 'demo-user-id';
-  const userName = req.headers.authorization ? 'Gopika Das' : 'Demo User';
+  const { role, userId } = req.body; // 'proposition' or 'opposition'
+  // Use provided userId or generate a demo one
+  const actualUserId = userId || 'demo-user-' + Date.now();
+  const userName = 'Gopika Das'; // Demo user name
 
-  // Check if role is already taken
-  const existingParticipant = debate.participants.find(p => p.role === role);
-  if (existingParticipant) {
-    return res.status(400).json({
-      success: false,
-      message: `${role} side is already taken`
+  // Check if this specific user is already in the debate
+  const existingUserParticipant = debate.participants.find(p => p.id === actualUserId);
+  if (existingUserParticipant) {
+    // Update their role instead of adding duplicate
+    existingUserParticipant.role = role;
+    return res.json({
+      success: true,
+      data: {
+        debate: debate,
+        participant: existingUserParticipant
+      },
+      message: `Successfully switched to ${role}`
     });
   }
 
   // Add participant
   const newParticipant = {
-    id: userId,
+    id: actualUserId,
     name: userName,
     role: role,
     type: 'human',
@@ -340,10 +346,15 @@ app.post('/api/debates/:id/messages', (req, res) => {
     });
   }
 
-  const { content, phase } = req.body;
-  // In demo mode, use the authenticated user's info or default
-  const userId = req.headers.authorization ? 'authenticated-user' : 'demo-user-id';
-  const participant = debate.participants.find(p => p.id === userId);
+  const { content, phase, userId } = req.body;
+  // Use provided userId or try to find any demo user
+  const actualUserId = userId || 'demo-user-id';
+  let participant = debate.participants.find(p => p.id === actualUserId);
+
+  // If not found, try to find any participant with the demo user name
+  if (!participant) {
+    participant = debate.participants.find(p => p.name === 'Gopika Das');
+  }
 
   if (!participant) {
     return res.status(400).json({
@@ -354,7 +365,7 @@ app.post('/api/debates/:id/messages', (req, res) => {
 
   const newMessage = {
     id: `msg-${Date.now()}`,
-    speakerId: userId,
+    speakerId: participant.id,
     speakerName: participant.name,
     speakerRole: participant.role,
     speakerType: participant.type,
