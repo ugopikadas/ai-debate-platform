@@ -5,14 +5,26 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
-const firebaseConfig = require('./firebase/config');
+// Initialize logger first
+const logger = require('./utils/logger');
+
+// Try to initialize Firebase (graceful failure in demo mode)
+let firebaseConfig;
+try {
+  firebaseConfig = require('./firebase/config');
+  logger.info('Firebase configuration loaded successfully');
+} catch (error) {
+  logger.warn('Firebase configuration failed, running in demo mode:', error.message);
+  firebaseConfig = null;
+}
+
+// Load routes with error handling
 const debateRoutes = require('./routes/debates');
 const agentRoutes = require('./routes/agents');
 const userRoutes = require('./routes/users');
 const { initializeSocketHandlers } = require('./sockets/debateSocket');
 const { errorHandler, notFound } = require('./middleware/errorMiddleware');
 const { rateLimiter } = require('./middleware/rateLimiter');
-const logger = require('./utils/logger');
 
 const app = express();
 const server = createServer(app);
@@ -40,7 +52,7 @@ app.use(express.urlencoded({ extended: true }));
 // app.use(rateLimiter); // Temporarily disabled for debugging
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_, res) => {
   res.status(200).json({ 
     status: 'OK', 
     timestamp: new Date().toISOString(),

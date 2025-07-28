@@ -6,25 +6,54 @@ const logger = require('../utils/logger');
 // Initialize Firebase Admin SDK
 let serviceAccount;
 try {
-  const path = require('path');
-  serviceAccount = require(path.join(__dirname, '../../serviceAccountKey.json'));
-  logger.info('Successfully loaded Firebase service account');
+  // Try to load from environment variables first (production/demo mode)
+  if (process.env.FIREBASE_PRIVATE_KEY && process.env.FIREBASE_CLIENT_EMAIL) {
+    serviceAccount = {
+      type: "service_account",
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      private_key_id: "demo-key-id",
+      private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      client_id: "demo-client-id",
+      auth_uri: "https://accounts.google.com/o/oauth2/auth",
+      token_uri: "https://oauth2.googleapis.com/token",
+      auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+    };
+    logger.info('Successfully loaded Firebase service account from environment');
+  } else {
+    // Fallback to service account file (local development)
+    const path = require('path');
+    serviceAccount = require(path.join(__dirname, '../../serviceAccountKey.json'));
+    logger.info('Successfully loaded Firebase service account from file');
+  }
 } catch (error) {
-  logger.error('Error loading Firebase service account:', error);
-  throw new Error('Firebase service account configuration is required');
+  logger.warn('Firebase service account not available, running in demo mode:', error.message);
+  // Create a mock service account for demo purposes
+  serviceAccount = {
+    type: "service_account",
+    project_id: process.env.FIREBASE_PROJECT_ID || "ai-debate-demo",
+    private_key_id: "demo-key-id",
+    private_key: "-----BEGIN PRIVATE KEY-----\nDEMO_PRIVATE_KEY\n-----END PRIVATE KEY-----\n",
+    client_email: "demo@ai-debate-demo.iam.gserviceaccount.com",
+    client_id: "demo-client-id",
+    auth_uri: "https://accounts.google.com/o/oauth2/auth",
+    token_uri: "https://oauth2.googleapis.com/token",
+    auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs"
+  };
 }
 
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      databaseURL: "https://ai-debate-platform-93397-default-rtdb.firebaseio.com",
-      storageBucket: "ai-debate-platform-93397.firebasestorage.app"
+      databaseURL: process.env.FIREBASE_DATABASE_URL || "https://ai-debate-demo-default-rtdb.firebaseio.com",
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "ai-debate-demo.firebasestorage.app"
     });
     logger.info('Firebase Admin SDK initialized successfully');
   } catch (error) {
     logger.error('Error initializing Firebase Admin SDK:', error);
-    throw error;
+    // Don't throw error in demo mode, just log it
+    logger.warn('Running in demo mode without Firebase connection');
   }
 }
 
