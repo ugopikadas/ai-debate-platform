@@ -154,8 +154,13 @@ const debatesSlice = createSlice({
       })
       .addCase(fetchDebates.fulfilled, (state, action) => {
         state.loading = false;
-        state.debates = action.payload.data;
-        state.pagination = action.payload.pagination;
+        state.debates = Array.isArray(action.payload.data) ? action.payload.data : [];
+        state.pagination = action.payload.pagination || {
+          total: 0,
+          limit: 20,
+          offset: 0,
+          hasMore: false
+        };
       })
       .addCase(fetchDebates.rejected, (state, action) => {
         state.loading = false;

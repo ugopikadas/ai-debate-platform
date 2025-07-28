@@ -160,10 +160,40 @@ app.get('/health', (req, res) => {
 
 // API routes
 app.get('/api/debates', (req, res) => {
+  const { limit = 20, offset = 0, status, search } = req.query;
+
+  let filteredDebates = [...demoDebates];
+
+  // Filter by status if provided
+  if (status && status !== 'all') {
+    filteredDebates = filteredDebates.filter(debate => debate.status === status);
+  }
+
+  // Filter by search term if provided
+  if (search) {
+    const searchLower = search.toLowerCase();
+    filteredDebates = filteredDebates.filter(debate =>
+      debate.title.toLowerCase().includes(searchLower) ||
+      debate.topic.toLowerCase().includes(searchLower) ||
+      debate.motion.toLowerCase().includes(searchLower)
+    );
+  }
+
+  const total = filteredDebates.length;
+  const startIndex = parseInt(offset);
+  const endIndex = startIndex + parseInt(limit);
+  const paginatedDebates = filteredDebates.slice(startIndex, endIndex);
+
   res.json({
     success: true,
-    data: demoDebates,
-    count: demoDebates.length
+    data: paginatedDebates,
+    pagination: {
+      total: total,
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+      hasMore: endIndex < total
+    },
+    count: total
   });
 });
 

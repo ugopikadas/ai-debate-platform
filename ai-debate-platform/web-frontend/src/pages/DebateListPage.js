@@ -44,10 +44,14 @@ const DebateListPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   
-  const { debates, loading, pagination, filters } = useSelector(state => state.debates);
+  const { debates, loading, pagination = { total: 0, limit: 20, offset: 0 }, filters } = useSelector(state => state.debates);
 
   useEffect(() => {
-    dispatch(fetchDebates({ ...filters, limit: 12 }));
+    try {
+      dispatch(fetchDebates({ ...filters, limit: 12 }));
+    } catch (error) {
+      console.error('Error fetching debates:', error);
+    }
   }, [dispatch, filters]);
 
   const handleFilterChange = (field, value) => {
@@ -69,17 +73,21 @@ const DebateListPage = () => {
   };
 
   const getParticipantInfo = (debate) => {
-    const humanParticipants = debate.participants?.filter(p => p.type === 'human').length || 0;
-    const aiParticipants = debate.participants?.filter(p => p.type === 'ai').length || 0;
+    if (!debate || !Array.isArray(debate.participants)) {
+      return { humanParticipants: 0, aiParticipants: 0 };
+    }
+    const humanParticipants = debate.participants.filter(p => p && p.type === 'human').length || 0;
+    const aiParticipants = debate.participants.filter(p => p && p.type === 'ai').length || 0;
     return { humanParticipants, aiParticipants };
   };
 
-  const filteredDebates = debates.filter(debate =>
-    debate.motion.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    debate.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredDebates = Array.isArray(debates) ? debates.filter(debate =>
+    debate && debate.motion &&
+    (debate.motion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    debate.description?.toLowerCase().includes(searchTerm.toLowerCase()))
+  ) : [];
 
-  if (loading && debates.length === 0) {
+  if (loading && (!Array.isArray(debates) || debates.length === 0)) {
     return <LoadingScreen message="Loading debates..." />;
   }
 
@@ -172,8 +180,13 @@ const DebateListPage = () => {
         <>
           <Grid container spacing={3}>
             {filteredDebates.map((debate, index) => {
+              if (!debate || !debate.id) {
+                console.warn('Invalid debate object at index:', index, debate);
+                return null;
+              }
+
               const { humanParticipants, aiParticipants } = getParticipantInfo(debate);
-              
+
               return (
                 <Grid item xs={12} md={6} lg={4} key={debate.id}>
                   <MotionCard
@@ -196,8 +209,8 @@ const DebateListPage = () => {
                       {/* Status and Type Chips */}
                       <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
                         <Chip
-                          label={debate.status}
-                          color={getDebateStatusColor(debate.status)}
+                          label={debate.status || 'unknown'}
+                          color={getDebateStatusColor(debate.status || 'unknown')}
                           size="small"
                         />
                         <Box sx={{ display: 'flex', gap: 0.5 }}>
@@ -228,7 +241,7 @@ const DebateListPage = () => {
                           lineHeight: 1.3
                         }}
                       >
-                        {debate.motion}
+                        {debate.motion || 'No motion specified'}
                       </Typography>
 
                       {/* Description */}
@@ -308,7 +321,7 @@ const DebateListPage = () => {
           </Grid>
 
           {/* Pagination */}
-          {pagination.total > pagination.limit && (
+          {pagination && pagination.total > pagination.limit && (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
               <Pagination
                 count={Math.ceil(pagination.total / pagination.limit)}
