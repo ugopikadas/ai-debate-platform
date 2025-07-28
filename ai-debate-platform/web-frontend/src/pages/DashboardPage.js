@@ -33,6 +33,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useSocket } from '../contexts/SocketContext';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 
 const MotionCard = motion(Card);
@@ -42,13 +43,50 @@ const DashboardPage = () => {
   const [recentDebates, setRecentDebates] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { connected } = useSocket();
+  const { connected, socket } = useSocket();
   const navigate = useNavigate();
   const theme = useTheme();
 
   useEffect(() => {
     fetchDashboardData();
+
+    // Set up periodic refresh for real-time updates
+    const interval = setInterval(fetchDashboardData, 30000); // Refresh every 30 seconds
+
+    return () => clearInterval(interval);
   }, []);
+
+  // Listen for real-time updates via socket
+  useEffect(() => {
+    if (socket && connected) {
+      const handleStatsUpdate = (data) => {
+        if (data.userId === user?.uid) {
+          // Refresh dashboard data when user stats are updated
+          fetchDashboardData();
+        }
+      };
+
+      const handleDebateCompleted = (data) => {
+        // Show notification for completed debates
+        if (data.winner && data.winner.participantId === user?.uid) {
+          toast.success(`🎉 Congratulations! You won the debate with a score of ${(data.winner.finalScore * 10).toFixed(1)}/10!`);
+        } else {
+          toast.info(`📊 A debate you participated in has been completed. Check your updated stats!`);
+        }
+
+        // Refresh dashboard to show updated stats
+        setTimeout(fetchDashboardData, 2000);
+      };
+
+      socket.on('user_stats_updated', handleStatsUpdate);
+      socket.on('debate_completed', handleDebateCompleted);
+
+      return () => {
+        socket.off('user_stats_updated', handleStatsUpdate);
+        socket.off('debate_completed', handleDebateCompleted);
+      };
+    }
+  }, [socket, connected, user]);
 
   const fetchDashboardData = async () => {
     try {

@@ -1,6 +1,5 @@
- //Fix the rate limiter middleware
-cat > backend/src/middleware/rateLimiter.js << 'EOF'
-const RateLimiterFlexible = require('rate-limiter-flexible').RateLimiterFlexible;
+// Fix the rate limiter middleware
+const { RateLimiterMemory } = require('rate-limiter-flexible');
 
 // Fallback logger if main logger doesn't exist
 let logger;
@@ -16,31 +15,31 @@ try {
 
 // Create rate limiters for different endpoints
 const rateLimiters = {
-  general: new RateLimiterFlexible({
+  general: new RateLimiterMemory({
     keyPrefix: 'general',
     points: 100,
     duration: 60,
     blockDuration: 60,
   }),
-  auth: new RateLimiterFlexible({
+  auth: new RateLimiterMemory({
     keyPrefix: 'auth',
     points: 10,
     duration: 60,
     blockDuration: 300,
   }),
-  debateCreation: new RateLimiterFlexible({
+  debateCreation: new RateLimiterMemory({
     keyPrefix: 'debate_creation',
     points: 5,
     duration: 3600,
     blockDuration: 3600,
   }),
-  aiGeneration: new RateLimiterFlexible({
+  aiGeneration: new RateLimiterMemory({
     keyPrefix: 'ai_generation',
     points: 10,
     duration: 3600,
     blockDuration: 1800,
   }),
-  messaging: new RateLimiterFlexible({
+  messaging: new RateLimiterMemory({
     keyPrefix: 'messaging',
     points: 60,
     duration: 60,

@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 const api = axios.create({
   baseURL: process.env.REACT_APP_BACKEND_URL || 'http://localhost:5000/api',
   timeout: 30000,
-  withCredentials: true,
+  withCredentials: false, // Temporarily disabled for debugging
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',

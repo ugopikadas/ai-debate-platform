@@ -61,6 +61,11 @@ const schema = yup.object({
     .min(60000, 'Minimum 1 minute per speech')
     .max(600000, 'Maximum 10 minutes per speech')
     .required('Time per speech is required'),
+  prepTime: yup
+    .number()
+    .min(60000, 'Minimum 1 minute preparation time')
+    .max(900000, 'Maximum 15 minutes preparation time')
+    .required('Preparation time is required'),
   maxParticipants: yup
     .number()
     .min(2, 'Minimum 2 participants')
@@ -98,6 +103,7 @@ const CreateDebatePage = () => {
       description: '',
       format: 'oxford',
       timePerSpeech: 180000, // 3 minutes
+      prepTime: 300000, // 5 minutes
       maxParticipants: 2,
       isPublic: false,
       hasAIParticipant: true,
@@ -158,7 +164,7 @@ const CreateDebatePage = () => {
       case 0:
         return ['motion', 'description'];
       case 1:
-        return ['format', 'timePerSpeech', 'maxParticipants', 'isPublic'];
+        return ['format', 'timePerSpeech', 'prepTime', 'maxParticipants', 'isPublic'];
       case 2:
         return hasAIParticipant ? ['hasAIParticipant', 'aiDifficulty'] : ['hasAIParticipant'];
       default:
@@ -262,6 +268,30 @@ const CreateDebatePage = () => {
                       { value: 180000, label: '3min' },
                       { value: 300000, label: '5min' },
                       { value: 600000, label: '10min' }
+                    ]}
+                    valueLabelDisplay="auto"
+                    valueLabelFormat={(value) => `${Math.round(value / 60000)}min`}
+                  />
+                )}
+              />
+            </Box>
+
+            <Box sx={{ mb: 3 }}>
+              <Typography gutterBottom>Preparation Time: {Math.round(watchedValues.prepTime / 60000)} minutes</Typography>
+              <Controller
+                name="prepTime"
+                control={control}
+                render={({ field }) => (
+                  <Slider
+                    {...field}
+                    min={60000}
+                    max={900000}
+                    step={60000}
+                    marks={[
+                      { value: 60000, label: '1min' },
+                      { value: 300000, label: '5min' },
+                      { value: 600000, label: '10min' },
+                      { value: 900000, label: '15min' }
                     ]}
                     valueLabelDisplay="auto"
                     valueLabelFormat={(value) => `${Math.round(value / 60000)}min`}
@@ -380,6 +410,7 @@ const CreateDebatePage = () => {
                 <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
                   <Chip label={`Format: ${watchedValues.format}`} />
                   <Chip label={`${Math.round(watchedValues.timePerSpeech / 60000)} min per speech`} />
+                  <Chip label={`${Math.round(watchedValues.prepTime / 60000)} min prep time`} />
                   <Chip label={`Max ${watchedValues.maxParticipants} participants`} />
                   {watchedValues.isPublic && <Chip label="Public" color="success" />}
                   {watchedValues.hasAIParticipant && (

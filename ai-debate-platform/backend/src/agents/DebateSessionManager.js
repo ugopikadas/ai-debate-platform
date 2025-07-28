@@ -261,17 +261,25 @@ class DebateSessionManager {
       };
       
       // This would integrate with the existing DebateAnalyzer
+      const overallScore = Math.random() * 10; // Placeholder - would use actual analysis
+      const suggestions = [
+        'Strong opening argument',
+        'Consider addressing opponent\'s previous point',
+        'Good use of evidence'
+      ];
+
       const feedback = {
+        type: 'speech_feedback',
         speechId: speech.id,
         timestamp: new Date().toISOString(),
-        argumentStrength: Math.random() * 10, // Placeholder - would use actual analysis
+        argumentStrength: overallScore,
         clarity: Math.random() * 10,
         relevance: Math.random() * 10,
-        suggestions: [
-          'Strong opening argument',
-          'Consider addressing opponent\'s previous point',
-          'Good use of evidence'
-        ]
+        overallScore,
+        suggestions,
+        feedback: {
+          quickTips: suggestions.slice(0, 2)
+        }
       };
       
       return feedback;
@@ -279,6 +287,7 @@ class DebateSessionManager {
     } catch (error) {
       logger.warn('Failed to generate real-time feedback');
       return {
+        type: 'error_feedback',
         speechId: speech.id,
         timestamp: new Date().toISOString(),
         error: 'Feedback generation failed'

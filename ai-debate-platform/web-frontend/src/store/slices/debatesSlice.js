@@ -40,9 +40,9 @@ export const createDebate = createAsyncThunk(
 
 export const joinDebate = createAsyncThunk(
   'debates/joinDebate',
-  async ({ debateId, role }, { rejectWithValue }) => {
+  async ({ debateId, role, userId }, { rejectWithValue }) => {
     try {
-      const response = await api.post(`/debates/${debateId}/join`, { role });
+      const response = await api.post(`/debates/${debateId}/join`, { role, userId });
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to join debate');
@@ -66,8 +66,8 @@ export const deleteDebate = createAsyncThunk(
   'debates/deleteDebate',
   async (debateId, { rejectWithValue }) => {
     try {
-      await api.delete(`/debates/${debateId}`);
-      return debateId;
+      const response = await api.delete(`/debates/${debateId}`);
+      return { debateId, ...response.data };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to delete debate');
     }
@@ -222,8 +222,9 @@ const debatesSlice = createSlice({
       
       // Delete debate
       .addCase(deleteDebate.fulfilled, (state, action) => {
-        state.debates = state.debates.filter(debate => debate.id !== action.payload);
-        if (state.currentDebate && state.currentDebate.id === action.payload) {
+        const debateId = action.payload.debateId;
+        state.debates = state.debates.filter(debate => debate.id !== debateId);
+        if (state.currentDebate && state.currentDebate.id === debateId) {
           state.currentDebate = null;
         }
       })

@@ -52,6 +52,11 @@ const LeaderboardPage = () => {
 
   useEffect(() => {
     fetchLeaderboardData();
+
+    // Set up periodic refresh for real-time updates
+    const interval = setInterval(fetchLeaderboardData, 60000); // Refresh every minute
+
+    return () => clearInterval(interval);
   }, [sortBy, timeRange]);
 
   const fetchLeaderboardData = async () => {
