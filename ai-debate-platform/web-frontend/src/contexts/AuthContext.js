@@ -50,16 +50,9 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (!auth) {
-      // Demo mode - set a demo user
-      const demoUser = {
-        uid: 'demo-user-id',
-        email: 'ugopikadas2003@gmail.com',
-        displayName: 'Demo User',
-        photoURL: null,
-        emailVerified: true
-      };
-      setUser(demoUser);
-      setIdToken('demo-token');
+      // Demo mode - don't auto-login, let user choose to login
+      setUser(null);
+      setIdToken(null);
       setLoading(false);
       return;
     }

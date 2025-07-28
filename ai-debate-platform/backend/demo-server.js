@@ -212,8 +212,9 @@ app.post('/api/debates/:id/join', (req, res) => {
   }
 
   const { role } = req.body; // 'proposition' or 'opposition'
-  const userId = 'demo-user-id';
-  const userName = 'Demo User';
+  // In demo mode, use the authenticated user's info or default
+  const userId = req.headers.authorization ? 'authenticated-user' : 'demo-user-id';
+  const userName = req.headers.authorization ? 'Gopika Das' : 'Demo User';
 
   // Check if role is already taken
   const existingParticipant = debate.participants.find(p => p.role === role);
@@ -257,7 +258,8 @@ app.post('/api/debates/:id/messages', (req, res) => {
   }
 
   const { content, phase } = req.body;
-  const userId = 'demo-user-id';
+  // In demo mode, use the authenticated user's info or default
+  const userId = req.headers.authorization ? 'authenticated-user' : 'demo-user-id';
   const participant = debate.participants.find(p => p.id === userId);
 
   if (!participant) {
