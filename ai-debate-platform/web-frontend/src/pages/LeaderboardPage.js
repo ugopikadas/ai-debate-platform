@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -27,10 +27,7 @@ import {
 import {
   EmojiEvents,
   TrendingUp,
-  Person,
-  SmartToy,
   Star,
-  Workspace,
   Visibility
 } from '@mui/icons-material';
 import { motion } from 'framer-motion';
@@ -45,7 +42,7 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
   const [sortBy, setSortBy] = useState('totalDebates');
-  const [timeRange, setTimeRange] = useState('all');
+  const [timeRange] = useState('all');
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [userRank, setUserRank] = useState(null);
   const { user } = useAuth();
@@ -173,7 +170,7 @@ const LeaderboardPage = () => {
           <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
             <Tabs
               value={tabValue}
-              onChange={(e, newValue) => setTabValue(newValue)}
+              onChange={(_, newValue) => setTabValue(newValue)}
               sx={{ minWidth: 200 }}
             >
               <Tab label="Overall" />

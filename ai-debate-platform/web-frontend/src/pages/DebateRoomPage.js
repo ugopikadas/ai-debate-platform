@@ -13,7 +13,6 @@ import {
   CardContent,
   LinearProgress,
   IconButton,
-  Tooltip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,20 +20,14 @@ import {
   List,
   ListItem,
   ListItemText,
-  Divider,
-  Alert
+  Divider
 } from '@mui/material';
 import {
   Send,
   SmartToy,
   Person,
-  Mic,
-  MicOff,
   Analytics,
   ExitToApp,
-  PlayArrow,
-  Pause,
-  Settings,
   Feedback,
   Timer,
   Delete
@@ -48,7 +41,6 @@ import { fetchDebateById, joinDebate, deleteDebate } from '../store/slices/debat
 import LoadingScreen from '../components/common/LoadingScreen';
 import toast from 'react-hot-toast';
 
-const MotionPaper = motion(Paper);
 const MotionBox = motion(Box);
 
 const DebateRoomPage = () => {
@@ -579,7 +571,7 @@ const DebateRoomPage = () => {
                     placeholder="Enter your argument..."
                     value={message}
                     onChange={(e) => handleTyping(e.target.value)}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
                         handleSendMessage();
