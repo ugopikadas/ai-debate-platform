@@ -33,17 +33,108 @@ const demoDebates = [
     id: 'demo-1',
     title: 'AI vs Human Intelligence',
     topic: 'Should AI replace human decision-making in critical areas?',
+    motion: 'This house believes that AI should replace human decision-making in critical areas',
     status: 'active',
-    participants: ['Alice', 'Bob'],
-    createdAt: new Date().toISOString()
+    phase: 'opening',
+    timeRemaining: 300,
+    participants: [
+      {
+        id: 'user-1',
+        name: 'Alice Johnson',
+        role: 'proposition',
+        type: 'human',
+        avatar: null,
+        joinedAt: new Date().toISOString()
+      },
+      {
+        id: 'ai-1',
+        name: 'AI Debater',
+        role: 'opposition',
+        type: 'ai',
+        avatar: null,
+        joinedAt: new Date().toISOString()
+      }
+    ],
+    messages: [
+      {
+        id: 'msg-1',
+        speakerId: 'user-1',
+        speakerName: 'Alice Johnson',
+        speakerRole: 'proposition',
+        speakerType: 'human',
+        content: 'AI systems can process vast amounts of data and make decisions without human bias or emotional interference.',
+        timestamp: new Date().toISOString(),
+        phase: 'opening'
+      },
+      {
+        id: 'msg-2',
+        speakerId: 'ai-1',
+        speakerName: 'AI Debater',
+        speakerRole: 'opposition',
+        speakerType: 'ai',
+        content: 'While AI can process data efficiently, human judgment incorporates ethical considerations, empathy, and contextual understanding that AI currently lacks.',
+        timestamp: new Date().toISOString(),
+        phase: 'opening'
+      }
+    ],
+    createdAt: new Date().toISOString(),
+    createdBy: 'user-1'
   },
   {
-    id: 'demo-2', 
+    id: 'demo-2',
     title: 'Climate Change Solutions',
     topic: 'What is the most effective approach to combat climate change?',
+    motion: 'This house believes that renewable energy is the most effective solution to climate change',
     status: 'completed',
-    participants: ['Charlie', 'Diana'],
-    createdAt: new Date().toISOString()
+    phase: 'concluded',
+    timeRemaining: 0,
+    participants: [
+      {
+        id: 'user-2',
+        name: 'Charlie Brown',
+        role: 'proposition',
+        type: 'human',
+        avatar: null,
+        joinedAt: new Date().toISOString()
+      },
+      {
+        id: 'user-3',
+        name: 'Diana Prince',
+        role: 'opposition',
+        type: 'human',
+        avatar: null,
+        joinedAt: new Date().toISOString()
+      }
+    ],
+    messages: [
+      {
+        id: 'msg-3',
+        speakerId: 'user-2',
+        speakerName: 'Charlie Brown',
+        speakerRole: 'proposition',
+        speakerType: 'human',
+        content: 'Renewable energy technologies have become increasingly cost-effective and can significantly reduce carbon emissions.',
+        timestamp: new Date().toISOString(),
+        phase: 'opening'
+      },
+      {
+        id: 'msg-4',
+        speakerId: 'user-3',
+        speakerName: 'Diana Prince',
+        speakerRole: 'opposition',
+        speakerType: 'human',
+        content: 'While renewable energy is important, a comprehensive approach including carbon capture, policy changes, and lifestyle modifications is more effective.',
+        timestamp: new Date().toISOString(),
+        phase: 'rebuttal'
+      }
+    ],
+    createdAt: new Date().toISOString(),
+    createdBy: 'user-2',
+    winner: 'opposition',
+    finalScores: {
+      proposition: 7.2,
+      opposition: 8.1
+    }
   }
 ];
 
@@ -108,6 +199,92 @@ app.get('/api/debates/:id', (req, res) => {
       message: 'Debate not found'
     });
   }
+});
+
+// Join debate with specific side
+app.post('/api/debates/:id/join', (req, res) => {
+  const debate = demoDebates.find(d => d.id === req.params.id);
+  if (!debate) {
+    return res.status(404).json({
+      success: false,
+      message: 'Debate not found'
+    });
+  }
+
+  const { role } = req.body; // 'proposition' or 'opposition'
+  const userId = 'demo-user-id';
+  const userName = 'Demo User';
+
+  // Check if role is already taken
+  const existingParticipant = debate.participants.find(p => p.role === role);
+  if (existingParticipant) {
+    return res.status(400).json({
+      success: false,
+      message: `${role} side is already taken`
+    });
+  }
+
+  // Add participant
+  const newParticipant = {
+    id: userId,
+    name: userName,
+    role: role,
+    type: 'human',
+    avatar: null,
+    joinedAt: new Date().toISOString()
+  };
+
+  debate.participants.push(newParticipant);
+
+  res.json({
+    success: true,
+    data: {
+      debate: debate,
+      participant: newParticipant
+    },
+    message: `Successfully joined as ${role}`
+  });
+});
+
+// Post message to debate
+app.post('/api/debates/:id/messages', (req, res) => {
+  const debate = demoDebates.find(d => d.id === req.params.id);
+  if (!debate) {
+    return res.status(404).json({
+      success: false,
+      message: 'Debate not found'
+    });
+  }
+
+  const { content, phase } = req.body;
+  const userId = 'demo-user-id';
+  const participant = debate.participants.find(p => p.id === userId);
+
+  if (!participant) {
+    return res.status(400).json({
+      success: false,
+      message: 'You must join the debate first'
+    });
+  }
+
+  const newMessage = {
+    id: `msg-${Date.now()}`,
+    speakerId: userId,
+    speakerName: participant.name,
+    speakerRole: participant.role,
+    speakerType: participant.type,
+    content: content,
+    timestamp: new Date().toISOString(),
+    phase: phase || debate.phase
+  };
+
+  debate.messages.push(newMessage);
+
+  res.json({
+    success: true,
+    data: newMessage,
+    message: 'Message posted successfully'
+  });
 });
 
 // User routes
@@ -235,18 +412,89 @@ io.on('connection', (socket) => {
     mode: 'demo'
   });
   
-  socket.on('join_debate', (debateId) => {
+  socket.on('join_debate', (data) => {
+    const { debateId, role } = data; // role: 'proposition' or 'opposition'
     socket.join(debateId);
-    socket.emit('joined_debate', { debateId, mode: 'demo' });
-    console.log(`User ${socket.id} joined debate ${debateId}`);
+    socket.debateRole = role;
+    socket.debateId = debateId;
+
+    socket.emit('joined_debate', {
+      debateId,
+      role,
+      mode: 'demo',
+      message: `Joined as ${role}`
+    });
+
+    // Notify other participants
+    socket.to(debateId).emit('participant_joined', {
+      socketId: socket.id,
+      role: role,
+      timestamp: new Date().toISOString()
+    });
+
+    console.log(`User ${socket.id} joined debate ${debateId} as ${role}`);
   });
-  
+
   socket.on('send_message', (data) => {
-    socket.to(data.debateId).emit('new_message', {
+    const messageData = {
       ...data,
+      socketId: socket.id,
+      role: socket.debateRole,
       timestamp: new Date().toISOString(),
       mode: 'demo'
+    };
+
+    // Broadcast to all participants in the debate
+    socket.to(data.debateId).emit('new_message', messageData);
+
+    // Also emit back to sender for confirmation
+    socket.emit('message_sent', messageData);
+  });
+
+  socket.on('change_phase', (data) => {
+    const { debateId, newPhase } = data;
+    socket.to(debateId).emit('phase_changed', {
+      phase: newPhase,
+      timestamp: new Date().toISOString(),
+      changedBy: socket.debateRole
     });
+  });
+
+  socket.on('generate_ai_response', (data) => {
+    const { debateId, motion, role, difficulty } = data;
+
+    // Simulate AI response generation
+    setTimeout(() => {
+      const aiResponses = {
+        proposition: [
+          "Based on empirical evidence, this position is strongly supported by recent studies...",
+          "The logical framework clearly demonstrates that...",
+          "From a practical standpoint, the benefits significantly outweigh the concerns..."
+        ],
+        opposition: [
+          "However, we must consider the counterarguments that challenge this perspective...",
+          "The evidence presented fails to account for several critical factors...",
+          "While the proposition makes valid points, the underlying assumptions are flawed..."
+        ]
+      };
+
+      const responses = aiResponses[role] || aiResponses.opposition;
+      const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+
+      const aiMessage = {
+        id: `ai-msg-${Date.now()}`,
+        speakerId: `ai-${role}`,
+        speakerName: 'AI Debater',
+        speakerRole: role,
+        speakerType: 'ai',
+        content: randomResponse,
+        timestamp: new Date().toISOString(),
+        debateId: debateId
+      };
+
+      socket.to(debateId).emit('ai_message', aiMessage);
+      socket.emit('ai_message', aiMessage);
+    }, 2000); // 2 second delay to simulate AI thinking
   });
   
   socket.on('disconnect', () => {
