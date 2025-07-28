@@ -584,15 +584,22 @@ const DebateRoomPage = () => {
               <div ref={messagesEndRef} />
             </Box>
 
-            {/* Message Input */}
-            {userRole && debate?.currentPhase === 'debate' && (
+            {/* Message Input - Always show for logged-in users */}
+            {user && (
               <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+                {!userRole && (
+                  <Box sx={{ mb: 2, p: 1, backgroundColor: 'warning.light', borderRadius: 1 }}>
+                    <Typography variant="body2" color="warning.dark">
+                      ⚠️ Join the debate to participate in the discussion
+                    </Typography>
+                  </Box>
+                )}
                 <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-end' }}>
                   <TextField
                     fullWidth
                     multiline
                     maxRows={4}
-                    placeholder="Enter your argument..."
+                    placeholder={userRole ? "Enter your argument..." : "Join the debate to send messages..."}
                     value={message}
                     onChange={(e) => handleTyping(e.target.value)}
                     onKeyDown={(e) => {
@@ -601,17 +608,37 @@ const DebateRoomPage = () => {
                         handleSendMessage();
                       }
                     }}
-                    disabled={!connected}
+                    disabled={!userRole}
                   />
                   <Button
                     variant="contained"
                     endIcon={<Send />}
                     onClick={handleSendMessage}
-                    disabled={!message.trim() || !connected}
+                    disabled={!message.trim() || !userRole}
                   >
                     Send
                   </Button>
                 </Box>
+                {!userRole && (
+                  <Box sx={{ mt: 2, display: 'flex', gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      onClick={() => handleJoinDebate('proposition')}
+                      size="small"
+                    >
+                      Join as Proposition (FOR)
+                    </Button>
+                    <Button
+                      variant="contained"
+                      color="error"
+                      onClick={() => handleJoinDebate('opposition')}
+                      size="small"
+                    >
+                      Join as Opposition (AGAINST)
+                    </Button>
+                  </Box>
+                )}
               </Box>
             )}
 

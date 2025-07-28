@@ -311,6 +311,25 @@ app.post('/api/debates/:id/join', (req, res) => {
   });
 });
 
+// Delete debate
+app.delete('/api/debates/:id', (req, res) => {
+  const debateIndex = demoDebates.findIndex(d => d.id === req.params.id);
+  if (debateIndex === -1) {
+    return res.status(404).json({
+      success: false,
+      message: 'Debate not found'
+    });
+  }
+
+  // Remove the debate
+  demoDebates.splice(debateIndex, 1);
+
+  res.json({
+    success: true,
+    message: 'Debate deleted successfully'
+  });
+});
+
 // Post message to debate
 app.post('/api/debates/:id/messages', (req, res) => {
   const debate = demoDebates.find(d => d.id === req.params.id);
