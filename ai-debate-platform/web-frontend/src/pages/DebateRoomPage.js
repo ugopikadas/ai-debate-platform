@@ -237,36 +237,39 @@ const DebateRoomPage = () => {
     if (!message.trim()) return;
 
     try {
-      if (connected) {
-        // Try socket first
-        sendMessage(id, message.trim());
-      } else {
-        // Fallback to REST API
-        const response = await fetch(`http://localhost:5000/api/debates/${id}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            content: message.trim(),
-            phase: 'debate',
-            userId: user?.uid || 'demo-user-google-id'
-          })
-        });
+      // Always use REST API for reliability
+      const response = await fetch(`http://localhost:5000/api/debates/${id}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: message.trim(),
+          phase: 'debate',
+          userId: user?.uid || 'demo-user-google-id'
+        })
+      });
 
-        if (!response.ok) {
-          throw new Error('Failed to send message');
-        }
-
-        // Refresh the debate to get the new message
-        dispatch(fetchDebateById(id));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to send message');
       }
 
+      const result = await response.json();
+      console.log('Message sent successfully:', result);
+
+      // Clear the input immediately
       setMessage('');
       setIsTyping(false);
+
+      // Refresh the debate to get the new message
+      await dispatch(fetchDebateById(id));
+
+      toast.success('Message sent successfully!');
+
     } catch (error) {
       console.error('Failed to send message:', error);
-      toast.error('Failed to send message');
+      toast.error(error.message || 'Failed to send message');
     }
   };
 

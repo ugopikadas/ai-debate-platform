@@ -172,6 +172,55 @@ const demoDebates = [
   }
 ];
 
+// AI Reply Generation Function
+function generateAIReply(debate, humanRole) {
+  // Determine AI role (opposite of human)
+  const aiRole = humanRole === 'proposition' ? 'opposition' : 'proposition';
+
+  // Find AI participant
+  const aiParticipant = debate.participants.find(p => p.role === aiRole && p.type === 'ai');
+  if (!aiParticipant) return;
+
+  // Generate AI response based on the debate topic and recent messages
+  const aiResponses = {
+    proposition: [
+      "AI systems demonstrate superior consistency and objectivity in decision-making processes.",
+      "The data clearly supports the efficiency gains from AI implementation in critical sectors.",
+      "Human bias and emotional decision-making often lead to suboptimal outcomes in high-stakes situations.",
+      "AI can process vast amounts of information simultaneously, leading to more informed decisions.",
+      "The track record of AI in medical diagnosis and financial analysis shows measurable improvements."
+    ],
+    opposition: [
+      "Human judgment incorporates ethical considerations and contextual understanding that AI lacks.",
+      "The complexity of real-world situations requires human empathy and moral reasoning.",
+      "AI systems are prone to algorithmic bias and can perpetuate existing inequalities.",
+      "Critical decisions affecting human lives require human accountability and responsibility.",
+      "The unpredictability of human creativity and intuition often leads to breakthrough solutions."
+    ]
+  };
+
+  // Select a random response appropriate to the AI's role
+  const responses = aiResponses[aiRole];
+  const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+
+  // Create AI message
+  const aiMessage = {
+    id: `msg-${Date.now()}-ai`,
+    speakerId: aiParticipant.id,
+    speakerName: aiParticipant.name,
+    speakerRole: aiParticipant.role,
+    speakerType: 'ai',
+    content: randomResponse,
+    timestamp: new Date().toISOString(),
+    phase: 'debate'
+  };
+
+  // Add AI message to debate
+  debate.messages.push(aiMessage);
+
+  console.log(`AI (${aiRole}) replied: ${randomResponse.substring(0, 50)}...`);
+}
+
 // Basic routes
 app.get('/', (req, res) => {
   res.json({ 
@@ -375,6 +424,13 @@ app.post('/api/debates/:id/messages', (req, res) => {
   };
 
   debate.messages.push(newMessage);
+
+  // Generate AI reply if the message is from a human
+  if (participant.type === 'human') {
+    setTimeout(() => {
+      generateAIReply(debate, participant.role);
+    }, 2000); // 2 second delay for realistic response time
+  }
 
   res.json({
     success: true,
