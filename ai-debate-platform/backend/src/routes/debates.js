@@ -2,9 +2,14 @@ const express = require('express');
 const router = express.Router();
 const { debateCreationRateLimiter } = require('../middleware/rateLimiter');
 const { dbHelpers, collections } = require('../firebase/config');
-const logger = require('../utils/logger');
 
-// Get all debates
+let logger;
+try {
+  logger = require('../utils/logger');
+} catch (error) {
+  logger = { info: console.log, error: console.error, warn: console.warn };
+}
+
 router.get('/', async (req, res) => {
   try {
     const debates = await dbHelpers.queryDocs(collections.DEBATES);
@@ -15,7 +20,6 @@ router.get('/', async (req, res) => {
   }
 });
 
-// Create new debate
 router.post('/', debateCreationRateLimiter, async (req, res) => {
   try {
     const { motion, type, participants } = req.body;
@@ -42,7 +46,6 @@ router.post('/', debateCreationRateLimiter, async (req, res) => {
   }
 });
 
-// Get specific debate
 router.get('/:id', async (req, res) => {
   try {
     const debate = await dbHelpers.getDoc(collections.DEBATES, req.params.id);

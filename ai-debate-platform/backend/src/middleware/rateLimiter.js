@@ -1,3 +1,5 @@
+ //Fix the rate limiter middleware
+cat > backend/src/middleware/rateLimiter.js << 'EOF'
 const RateLimiterFlexible = require('rate-limiter-flexible').RateLimiterFlexible;
 
 // Fallback logger if main logger doesn't exist
@@ -14,39 +16,30 @@ try {
 
 // Create rate limiters for different endpoints
 const rateLimiters = {
-  // General API rate limiter
   general: new RateLimiterFlexible({
     keyPrefix: 'general',
     points: 100,
     duration: 60,
     blockDuration: 60,
   }),
-
-  // Authentication rate limiter (stricter)
   auth: new RateLimiterFlexible({
     keyPrefix: 'auth',
     points: 10,
     duration: 60,
     blockDuration: 300,
   }),
-
-  // Debate creation rate limiter
   debateCreation: new RateLimiterFlexible({
     keyPrefix: 'debate_creation',
     points: 5,
     duration: 3600,
     blockDuration: 3600,
   }),
-
-  // AI agent generation rate limiter
   aiGeneration: new RateLimiterFlexible({
     keyPrefix: 'ai_generation',
     points: 10,
     duration: 3600,
     blockDuration: 1800,
   }),
-
-  // Message sending rate limiter
   messaging: new RateLimiterFlexible({
     keyPrefix: 'messaging',
     points: 60,
@@ -55,9 +48,6 @@ const rateLimiters = {
   })
 };
 
-/**
- * General rate limiter middleware
- */
 const rateLimiter = async (req, res, next) => {
   try {
     const key = req.user?.uid || req.ip;
@@ -66,12 +56,7 @@ const rateLimiter = async (req, res, next) => {
   } catch (rejRes) {
     const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
     res.set('Retry-After', String(secs));
-
-    logger.warn(`Rate limit exceeded for ${req.user?.uid || req.ip}`, {
-      endpoint: req.originalUrl,
-      method: req.method
-    });
-
+    logger.warn(`Rate limit exceeded for ${req.user?.uid || req.ip}`);
     res.status(429).json({
       success: false,
       message: 'Too many requests. Please try again later.',
@@ -80,9 +65,6 @@ const rateLimiter = async (req, res, next) => {
   }
 };
 
-/**
- * Create specific rate limiter middleware
- */
 function createRateLimiter(limiterName) {
   return async (req, res, next) => {
     try {
@@ -99,13 +81,7 @@ function createRateLimiter(limiterName) {
     } catch (rejRes) {
       const secs = Math.round(rejRes.msBeforeNext / 1000) || 1;
       res.set('Retry-After', String(secs));
-
-      logger.warn(`Rate limit exceeded for ${req.user?.uid || req.ip}`, {
-        limiter: limiterName,
-        endpoint: req.originalUrl,
-        method: req.method
-      });
-
+      logger.warn(`Rate limit exceeded for ${req.user?.uid || req.ip}`);
       res.status(429).json({
         success: false,
         message: `Rate limit exceeded for ${limiterName}. Please try again later.`,
@@ -115,7 +91,6 @@ function createRateLimiter(limiterName) {
   };
 }
 
-// Export specific rate limiters
 const authRateLimiter = createRateLimiter('auth');
 const debateCreationRateLimiter = createRateLimiter('debateCreation');
 const aiGenerationRateLimiter = createRateLimiter('aiGeneration');
