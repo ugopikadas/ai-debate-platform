@@ -52,6 +52,7 @@ Thumbs.db
 # Firebase service account keys
 *service-account*.json
 firebase-adminsdk*.json
+serviceAccountKey.json
 
 # API keys and secrets
 *.pem
