@@ -116,14 +116,81 @@ app.get('/api/users/profile', (req, res) => {
     success: true,
     data: {
       id: 'demo-user',
-      name: 'Demo User',
-      email: 'demo@example.com',
-      stats: {
-        totalDebates: 5,
-        wins: 3,
-        rating: 1250
-      }
+      displayName: 'Demo User',
+      email: 'ugopikadas2003@gmail.com',
+      bio: 'Passionate debater and AI enthusiast. Love exploring complex topics and engaging in thoughtful discussions.',
+      avatar: null,
+      preferences: {
+        notifications: true,
+        emailNotifications: true,
+        preferredDebateFormat: 'oxford',
+        aiDifficulty: 'intermediate'
+      },
+      memberSince: '2024-01-15T10:30:00Z',
+      lastActive: new Date().toISOString()
     }
+  });
+});
+
+app.get('/api/users/stats', (req, res) => {
+  res.json({
+    success: true,
+    data: {
+      totalDebates: 12,
+      wins: 8,
+      losses: 4,
+      winRate: 66.7,
+      rating: 1285,
+      averageScore: 7.8,
+      completedDebates: 12,
+      activeDebates: 2,
+      totalArguments: 156,
+      averageArgumentLength: 245,
+      favoriteTopics: ['Technology', 'Ethics', 'Politics'],
+      recentActivity: [
+        {
+          type: 'debate_completed',
+          title: 'AI in Healthcare',
+          result: 'won',
+          date: '2024-01-20T15:30:00Z',
+          score: 8.5
+        },
+        {
+          type: 'debate_joined',
+          title: 'Climate Change Solutions',
+          date: '2024-01-19T09:15:00Z'
+        },
+        {
+          type: 'argument_posted',
+          debate: 'Future of Work',
+          date: '2024-01-18T14:22:00Z'
+        }
+      ]
+    }
+  });
+});
+
+app.patch('/api/users/profile', (req, res) => {
+  // In demo mode, just return success with updated data
+  const updatedProfile = {
+    id: 'demo-user',
+    displayName: req.body.displayName || 'Demo User',
+    email: 'ugopikadas2003@gmail.com',
+    bio: req.body.bio || 'Passionate debater and AI enthusiast.',
+    preferences: {
+      notifications: req.body.preferences?.notifications ?? true,
+      emailNotifications: req.body.preferences?.emailNotifications ?? true,
+      preferredDebateFormat: req.body.preferences?.preferredDebateFormat || 'oxford',
+      aiDifficulty: req.body.preferences?.aiDifficulty || 'intermediate'
+    },
+    memberSince: '2024-01-15T10:30:00Z',
+    lastActive: new Date().toISOString()
+  };
+
+  res.json({
+    success: true,
+    data: updatedProfile,
+    message: 'Profile updated successfully (demo mode)'
   });
 });
 

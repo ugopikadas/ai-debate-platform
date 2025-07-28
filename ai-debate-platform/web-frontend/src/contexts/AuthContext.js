@@ -23,8 +23,15 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+let app, auth;
+try {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+} catch (error) {
+  console.warn('Firebase initialization failed, running in demo mode:', error);
+  // Create mock auth for demo mode
+  auth = null;
+}
 
 const AuthContext = createContext({});
 
@@ -42,6 +49,21 @@ export const AuthProvider = ({ children }) => {
   const [idToken, setIdToken] = useState(null);
 
   useEffect(() => {
+    if (!auth) {
+      // Demo mode - set a demo user
+      const demoUser = {
+        uid: 'demo-user-id',
+        email: 'ugopikadas2003@gmail.com',
+        displayName: 'Demo User',
+        photoURL: null,
+        emailVerified: true
+      };
+      setUser(demoUser);
+      setIdToken('demo-token');
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         try {
@@ -88,13 +110,29 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setLoading(true);
+
+      if (!auth) {
+        // Demo mode - simulate login
+        const demoUser = {
+          uid: 'demo-user-id',
+          email: email,
+          displayName: 'Demo User',
+          photoURL: null,
+          emailVerified: true
+        };
+        setUser(demoUser);
+        setIdToken('demo-token');
+        toast.success('Successfully logged in (demo mode)!');
+        return { user: demoUser };
+      }
+
       const result = await signInWithEmailAndPassword(auth, email, password);
       toast.success('Successfully logged in!');
       return result;
     } catch (error) {
       console.error('Login error:', error);
       let message = 'Login failed. Please try again.';
-      
+
       switch (error.code) {
         case 'auth/user-not-found':
           message = 'No account found with this email address.';
@@ -114,7 +152,7 @@ export const AuthProvider = ({ children }) => {
         default:
           message = error.message;
       }
-      
+
       toast.error(message);
       throw error;
     } finally {
@@ -162,6 +200,22 @@ export const AuthProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     try {
       setLoading(true);
+
+      if (!auth) {
+        // Demo mode - simulate Google login
+        const demoUser = {
+          uid: 'demo-user-google-id',
+          email: 'ugopikadas2003@gmail.com',
+          displayName: 'Demo User',
+          photoURL: null,
+          emailVerified: true
+        };
+        setUser(demoUser);
+        setIdToken('demo-google-token');
+        toast.success('Successfully logged in with Google (demo mode)!');
+        return { user: demoUser };
+      }
+
       const provider = new GoogleAuthProvider();
       const result = await signInWithPopup(auth, provider);
       toast.success('Successfully logged in with Google!');
@@ -169,7 +223,7 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Google login error:', error);
       let message = 'Google login failed. Please try again.';
-      
+
       switch (error.code) {
         case 'auth/popup-closed-by-user':
           message = 'Login cancelled.';
