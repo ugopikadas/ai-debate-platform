@@ -48,6 +48,22 @@ const demoDebates = [
         joinedAt: new Date().toISOString()
       },
       {
+        id: 'demo-user-google-id',
+        name: 'Gopika Das',
+        role: 'proposition',
+        type: 'human',
+        avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+        joinedAt: new Date().toISOString()
+      },
+      {
+        id: 'demo-user-id',
+        name: 'Gopika Das',
+        role: 'proposition',
+        type: 'human',
+        avatar: null,
+        joinedAt: new Date().toISOString()
+      },
+      {
         id: 'ai-1',
         name: 'AI Debater',
         role: 'opposition',
@@ -86,14 +102,31 @@ const demoDebates = [
     title: 'Climate Change Solutions',
     topic: 'What is the most effective approach to combat climate change?',
     motion: 'This house believes that renewable energy is the most effective solution to climate change',
-    status: 'completed',
-    phase: 'concluded',
-    timeRemaining: 0,
+    status: 'active',
+    phase: 'debate',
+    currentPhase: 'debate',
+    timeRemaining: 180,
     participants: [
       {
         id: 'user-2',
         name: 'Charlie Brown',
         role: 'proposition',
+        type: 'human',
+        avatar: null,
+        joinedAt: new Date().toISOString()
+      },
+      {
+        id: 'demo-user-google-id',
+        name: 'Gopika Das',
+        role: 'opposition',
+        type: 'human',
+        avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+        joinedAt: new Date().toISOString()
+      },
+      {
+        id: 'demo-user-id',
+        name: 'Gopika Das',
+        role: 'opposition',
         type: 'human',
         avatar: null,
         joinedAt: new Date().toISOString()
