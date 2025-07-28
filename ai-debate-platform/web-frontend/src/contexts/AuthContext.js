@@ -112,17 +112,19 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
 
       if (!auth) {
-        // Demo mode - simulate login
+        // Demo mode - simulate login with realistic delay
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+
         const demoUser = {
           uid: 'demo-user-id',
           email: email,
-          displayName: 'Demo User',
+          displayName: 'Gopika Das',
           photoURL: null,
           emailVerified: true
         };
         setUser(demoUser);
         setIdToken('demo-token');
-        toast.success('Successfully logged in (demo mode)!');
+        toast.success('✅ Successfully logged in!');
         return { user: demoUser };
       }
 
@@ -202,17 +204,26 @@ export const AuthProvider = ({ children }) => {
       setLoading(true);
 
       if (!auth) {
-        // Demo mode - simulate Google login
+        // Demo mode - simulate Google login with realistic delay
+        await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
+
         const demoUser = {
           uid: 'demo-user-google-id',
           email: 'ugopikadas2003@gmail.com',
-          displayName: 'Demo User',
-          photoURL: null,
-          emailVerified: true
+          displayName: 'Gopika Das',
+          photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c', // Demo Google avatar
+          emailVerified: true,
+          providerData: [{
+            providerId: 'google.com',
+            uid: 'demo-google-uid',
+            displayName: 'Gopika Das',
+            email: 'ugopikadas2003@gmail.com',
+            photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c'
+          }]
         };
         setUser(demoUser);
         setIdToken('demo-google-token');
-        toast.success('Successfully logged in with Google (demo mode)!');
+        toast.success('🎉 Successfully logged in with Google!');
         return { user: demoUser };
       }
 
