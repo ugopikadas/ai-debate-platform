@@ -140,6 +140,118 @@ const demoDebates = [
   }
 ];
 
+// Scoring System
+function calculateMessageScore(message, debate) {
+  // Base score factors
+  let score = 5.0; // Base score out of 10
+
+  // Length factor (optimal 50-200 characters)
+  const length = message.content.length;
+  if (length >= 50 && length <= 200) {
+    score += 1.0;
+  } else if (length > 200 && length <= 300) {
+    score += 0.5;
+  }
+
+  // Engagement factor (responding to previous messages)
+  const recentMessages = debate.messages.slice(-3);
+  const hasEngagement = recentMessages.some(msg =>
+    msg.speakerRole !== message.speakerRole &&
+    message.content.toLowerCase().includes('however') ||
+    message.content.toLowerCase().includes('but') ||
+    message.content.toLowerCase().includes('although')
+  );
+  if (hasEngagement) score += 1.0;
+
+  // Argument strength indicators
+  const strengthIndicators = [
+    'evidence', 'data', 'study', 'research', 'statistics',
+    'proven', 'demonstrates', 'shows', 'indicates', 'analysis'
+  ];
+  const strengthCount = strengthIndicators.filter(indicator =>
+    message.content.toLowerCase().includes(indicator)
+  ).length;
+  score += Math.min(strengthCount * 0.5, 2.0);
+
+  // Rhetorical devices
+  const rhetoricalDevices = [
+    'furthermore', 'moreover', 'therefore', 'consequently',
+    'in contrast', 'on the other hand', 'for instance', 'for example'
+  ];
+  const rhetoricalCount = rhetoricalDevices.filter(device =>
+    message.content.toLowerCase().includes(device)
+  ).length;
+  score += Math.min(rhetoricalCount * 0.3, 1.0);
+
+  // Cap at 10
+  return Math.min(score, 10.0);
+}
+
+function updateUserStats(userId, messageScore, role, debate) {
+  // Initialize user stats if not exists
+  if (!debate.userStats) debate.userStats = {};
+  if (!debate.userStats[userId]) {
+    debate.userStats[userId] = {
+      totalMessages: 0,
+      totalScore: 0,
+      averageScore: 0,
+      bestScore: 0,
+      role: role,
+      recentScores: [],
+      wins: 0,
+      losses: 0,
+      totalDebates: 1,
+      winRate: 0,
+      streak: 0,
+      badges: []
+    };
+  }
+
+  const stats = debate.userStats[userId];
+  stats.totalMessages++;
+  stats.totalScore += messageScore;
+  stats.averageScore = stats.totalScore / stats.totalMessages;
+  stats.bestScore = Math.max(stats.bestScore, messageScore);
+  stats.recentScores.push(messageScore);
+
+  // Keep only last 10 scores
+  if (stats.recentScores.length > 10) {
+    stats.recentScores = stats.recentScores.slice(-10);
+  }
+
+  return stats;
+}
+
+// Global leaderboard data
+let globalLeaderboard = {};
+
+function updateGlobalLeaderboard(userId, userName, stats) {
+  if (!globalLeaderboard[userId]) {
+    globalLeaderboard[userId] = {
+      id: userId,
+      name: userName,
+      totalDebates: 0,
+      totalMessages: 0,
+      averageScore: 0,
+      bestScore: 0,
+      wins: 0,
+      losses: 0,
+      winRate: 0,
+      streak: 0,
+      badges: [],
+      lastActive: new Date().toISOString()
+    };
+  }
+
+  const globalStats = globalLeaderboard[userId];
+  globalStats.totalMessages += 1;
+  globalStats.averageScore = ((globalStats.averageScore * (globalStats.totalMessages - 1)) + stats.averageScore) / globalStats.totalMessages;
+  globalStats.bestScore = Math.max(globalStats.bestScore, stats.bestScore);
+  globalStats.lastActive = new Date().toISOString();
+
+  return globalStats;
+}
+
 // AI Reply Generation Function
 function generateAIReply(debate, humanRole) {
   console.log('🤖 Generating AI reply for human role:', humanRole);
@@ -442,8 +554,19 @@ app.post('/api/debates/:id/messages', (req, res) => {
   debate.messages.push(newMessage);
   console.log('📝 Message added to debate. Total messages:', debate.messages.length);
 
-  // Generate AI reply if the message is from a human
+  // Calculate score and update stats for human messages
   if (participant.type === 'human') {
+    const messageScore = calculateMessageScore(newMessage, debate);
+    const userStats = updateUserStats(participant.id, messageScore, participant.role, debate);
+    const globalStats = updateGlobalLeaderboard(participant.id, participant.name, userStats);
+
+    console.log('📊 Message scored:', {
+      score: messageScore.toFixed(1),
+      averageScore: userStats.averageScore.toFixed(1),
+      totalMessages: userStats.totalMessages
+    });
+
+    // Generate AI reply
     setTimeout(() => {
       generateAIReply(debate, participant.role);
     }, 2000); // 2 second delay for realistic response time
@@ -453,6 +576,130 @@ app.post('/api/debates/:id/messages', (req, res) => {
     success: true,
     data: newMessage,
     message: 'Message posted successfully'
+  });
+});
+
+// User stats endpoint
+app.get('/api/users/stats', (req, res) => {
+  const userId = 'demo-user-google-id'; // Demo user ID
+  const userStats = globalLeaderboard[userId];
+
+  if (!userStats) {
+    // Return default stats for new users
+    return res.json({
+      success: true,
+      data: {
+        totalDebates: 0,
+        totalMessages: 0,
+        averageScore: 0,
+        averageArgumentStrength: 0,
+        bestScore: 0,
+        winRate: 0,
+        streak: 0,
+        debatesByFormat: {
+          oxford: 0,
+          parliamentary: 0,
+          'lincoln-douglas': 0
+        },
+        recentPerformance: [],
+        badges: []
+      }
+    });
+  }
+
+  // Calculate additional metrics
+  const recentPerformance = userStats.recentScores || [];
+  const debatesByFormat = {
+    oxford: Math.floor(userStats.totalDebates * 0.6),
+    parliamentary: Math.floor(userStats.totalDebates * 0.3),
+    'lincoln-douglas': Math.floor(userStats.totalDebates * 0.1)
+  };
+
+  res.json({
+    success: true,
+    data: {
+      totalDebates: userStats.totalDebates,
+      totalMessages: userStats.totalMessages,
+      averageScore: userStats.averageScore,
+      averageArgumentStrength: userStats.averageScore,
+      bestScore: userStats.bestScore,
+      winRate: userStats.winRate,
+      streak: userStats.streak,
+      debatesByFormat,
+      recentPerformance: recentPerformance.map((score, index) => ({
+        date: new Date(Date.now() - (recentPerformance.length - index) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        score: score,
+        debates: 1
+      })),
+      badges: userStats.badges || []
+    }
+  });
+});
+
+// Public users endpoint for leaderboard
+app.get('/api/users/public', (req, res) => {
+  const { sortBy = 'averageScore', limit = 50 } = req.query;
+
+  console.log('👥 Fetching public users for leaderboard...');
+
+  // Convert global leaderboard to public user format
+  let users = Object.values(globalLeaderboard).map(user => ({
+    uid: user.id,
+    displayName: user.name,
+    photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+    debateStats: {
+      totalDebates: user.totalDebates,
+      averageScore: user.averageScore,
+      totalMessages: user.totalMessages,
+      wins: user.wins,
+      losses: user.losses,
+      winRate: user.winRate,
+      streak: user.streak
+    },
+    lastActive: user.lastActive
+  }));
+
+  // Add demo users if empty
+  if (users.length === 0) {
+    users = [
+      {
+        uid: 'demo-1',
+        displayName: 'Alice Johnson',
+        photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+        debateStats: { totalDebates: 18, averageScore: 7.8, totalMessages: 156, wins: 12, losses: 6, winRate: 0.67, streak: 3 },
+        lastActive: new Date().toISOString()
+      },
+      {
+        uid: 'demo-2',
+        displayName: 'Bob Smith',
+        photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+        debateStats: { totalDebates: 15, averageScore: 7.2, totalMessages: 134, wins: 10, losses: 5, winRate: 0.67, streak: 1 },
+        lastActive: new Date().toISOString()
+      }
+    ];
+  }
+
+  // Sort users
+  users.sort((a, b) => {
+    switch (sortBy) {
+      case 'totalDebates':
+        return b.debateStats.totalDebates - a.debateStats.totalDebates;
+      case 'winRate':
+        return b.debateStats.winRate - a.debateStats.winRate;
+      case 'averageScore':
+      default:
+        return b.debateStats.averageScore - a.debateStats.averageScore;
+    }
+  });
+
+  // Limit results
+  users = users.slice(0, parseInt(limit));
+
+  console.log('👥 Returning', users.length, 'public users');
+
+  res.json({
+    success: true,
+    data: users
   });
 });
 
@@ -542,33 +789,142 @@ app.patch('/api/users/profile', (req, res) => {
 
 // Leaderboard
 app.get('/api/leaderboard', (req, res) => {
+  console.log('📊 Fetching leaderboard data...');
+
+  // Convert global leaderboard to array and sort by average score
+  const leaderboardArray = Object.values(globalLeaderboard)
+    .sort((a, b) => b.averageScore - a.averageScore)
+    .map((user, index) => ({
+      ...user,
+      rank: index + 1,
+      rating: Math.round(user.averageScore * 150 + 1000), // Convert to rating scale
+      uid: user.id, // For frontend compatibility
+      displayName: user.name,
+      photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+      debateStats: {
+        totalDebates: user.totalDebates,
+        averageScore: user.averageScore,
+        totalMessages: user.totalMessages
+      }
+    }));
+
+  // Add some demo users if leaderboard is empty
+  if (leaderboardArray.length === 0) {
+    leaderboardArray.push(
+      {
+        id: 'demo-1',
+        uid: 'demo-1',
+        name: 'Alice Johnson',
+        displayName: 'Alice Johnson',
+        rating: 1450,
+        wins: 12,
+        losses: 6,
+        totalDebates: 18,
+        averageScore: 7.8,
+        totalMessages: 156,
+        winRate: 0.67,
+        streak: 3,
+        rank: 1,
+        photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+        debateStats: { totalDebates: 18, averageScore: 7.8, totalMessages: 156 }
+      },
+      {
+        id: 'demo-2',
+        uid: 'demo-2',
+        name: 'Bob Smith',
+        displayName: 'Bob Smith',
+        rating: 1380,
+        wins: 10,
+        losses: 5,
+        totalDebates: 15,
+        averageScore: 7.2,
+        totalMessages: 134,
+        winRate: 0.67,
+        streak: 1,
+        rank: 2,
+        photoURL: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+        debateStats: { totalDebates: 15, averageScore: 7.2, totalMessages: 134 }
+      }
+    );
+  }
+
+  console.log('📊 Returning leaderboard with', leaderboardArray.length, 'users');
+
   res.json({
     success: true,
-    data: [
-      { id: '1', name: 'Alice Johnson', rating: 1450, wins: 12, totalDebates: 18 },
-      { id: '2', name: 'Bob Smith', rating: 1380, wins: 10, totalDebates: 15 },
-      { id: '3', name: 'Charlie Brown', rating: 1320, wins: 8, totalDebates: 12 },
-      { id: '4', name: 'Diana Prince', rating: 1280, wins: 7, totalDebates: 11 },
-      { id: '5', name: 'Demo User', rating: 1250, wins: 3, totalDebates: 5 }
-    ]
+    data: leaderboardArray
   });
 });
 
 // Analytics
 app.get('/api/analytics/dashboard', (req, res) => {
+  console.log('📈 Fetching analytics data...');
+
+  // Calculate real-time analytics
+  const totalUsers = Object.keys(globalLeaderboard).length;
+  const activeDebates = demoDebates.filter(d => d.status === 'active').length;
+  const completedDebates = demoDebates.filter(d => d.status === 'completed').length;
+  const totalDebates = demoDebates.length;
+
+  // Calculate average rating from global leaderboard
+  const averageRating = totalUsers > 0
+    ? Object.values(globalLeaderboard).reduce((sum, user) => sum + (user.averageScore * 150 + 1000), 0) / totalUsers
+    : 1285;
+
+  // Get recent activity from debate messages
+  const recentActivity = [];
+  demoDebates.forEach(debate => {
+    if (debate.messages && debate.messages.length > 0) {
+      const recentMessages = debate.messages.slice(-3);
+      recentMessages.forEach(msg => {
+        if (msg.speakerType === 'human') {
+          recentActivity.push({
+            type: 'message_sent',
+            message: `${msg.speakerName} posted in "${debate.title}"`,
+            timestamp: msg.timestamp,
+            debateId: debate.id
+          });
+        }
+      });
+    }
+  });
+
+  // Sort by timestamp and take latest 10
+  recentActivity.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const latestActivity = recentActivity.slice(0, 10);
+
+  // Add some demo activity if empty
+  if (latestActivity.length === 0) {
+    latestActivity.push(
+      { type: 'debate_created', message: 'New debate: AI vs Human Intelligence', timestamp: new Date().toISOString() },
+      { type: 'user_joined', message: 'Gopika Das joined the platform', timestamp: new Date().toISOString() }
+    );
+  }
+
+  const analyticsData = {
+    totalDebates,
+    activeDebates,
+    completedDebates,
+    totalUsers: Math.max(totalUsers, 5), // Show at least 5 for demo
+    averageRating: Math.round(averageRating),
+    recentActivity: latestActivity,
+    // Additional metrics
+    totalMessages: Object.values(globalLeaderboard).reduce((sum, user) => sum + user.totalMessages, 0),
+    averageScore: totalUsers > 0
+      ? Object.values(globalLeaderboard).reduce((sum, user) => sum + user.averageScore, 0) / totalUsers
+      : 7.5,
+    topPerformer: Object.values(globalLeaderboard).sort((a, b) => b.averageScore - a.averageScore)[0]?.name || 'No data yet'
+  };
+
+  console.log('📈 Analytics data:', {
+    totalUsers: analyticsData.totalUsers,
+    totalDebates: analyticsData.totalDebates,
+    averageScore: analyticsData.averageScore?.toFixed(1)
+  });
+
   res.json({
     success: true,
-    data: {
-      totalDebates: 25,
-      activeDebates: 3,
-      completedDebates: 22,
-      totalUsers: 150,
-      averageRating: 1285,
-      recentActivity: [
-        { type: 'debate_created', message: 'New debate: AI Ethics', timestamp: new Date().toISOString() },
-        { type: 'user_joined', message: 'Alice joined the platform', timestamp: new Date().toISOString() }
-      ]
-    }
+    data: analyticsData
   });
 });
 

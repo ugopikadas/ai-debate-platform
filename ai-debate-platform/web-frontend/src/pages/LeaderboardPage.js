@@ -51,7 +51,7 @@ const LeaderboardPage = () => {
     fetchLeaderboardData();
 
     // Set up periodic refresh for real-time updates
-    const interval = setInterval(fetchLeaderboardData, 60000); // Refresh every minute
+    const interval = setInterval(fetchLeaderboardData, 10000); // Refresh every 10 seconds for real-time feel
 
     return () => clearInterval(interval);
   }, [sortBy, timeRange]);
