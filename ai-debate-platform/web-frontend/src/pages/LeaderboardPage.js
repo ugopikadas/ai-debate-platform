@@ -68,16 +68,19 @@ const LeaderboardPage = () => {
         }
       });
       
-      const users = response.data.data;
+      const users = response.data.data || [];
       
       // Mock additional data for demonstration
       const enhancedUsers = users.map((user, index) => ({
         ...user,
+        displayName: user?.displayName || 'Unknown User',
+        photoURL: user?.photoURL || '',
+        debateStats: user?.debateStats || { totalDebates: 0, averageScore: 0 },
         rank: index + 1,
         winRate: Math.random() * 0.4 + 0.6, // 60-100% win rate
-        avgScore: (user.debateStats?.averageScore || 0) + Math.random() * 2,
+        avgScore: (user?.debateStats?.averageScore || 0) + Math.random() * 2,
         streak: Math.floor(Math.random() * 10) + 1,
-        badges: generateBadges(user.debateStats)
+        badges: generateBadges(user?.debateStats || {})
       }));
       
       setLeaderboardData(enhancedUsers);
@@ -95,11 +98,14 @@ const LeaderboardPage = () => {
     }
   };
 
-  const generateBadges = (stats) => {
+  const generateBadges = (stats = {}) => {
     const badges = [];
-    if (stats?.totalDebates >= 100) badges.push({ name: 'Veteran', color: 'primary', icon: EmojiEvents });
-    if (stats?.averageScore >= 8) badges.push({ name: 'Expert', color: 'success', icon: Star });
-    if (stats?.totalDebates >= 50) badges.push({ name: 'Active', color: 'info', icon: TrendingUp });
+    const totalDebates = stats?.totalDebates || 0;
+    const averageScore = stats?.averageScore || 0;
+
+    if (totalDebates >= 100) badges.push({ name: 'Veteran', color: 'primary', icon: EmojiEvents });
+    if (averageScore >= 8) badges.push({ name: 'Expert', color: 'success', icon: Star });
+    if (totalDebates >= 50) badges.push({ name: 'Active', color: 'info', icon: TrendingUp });
     return badges;
   };
 
@@ -238,7 +244,7 @@ const LeaderboardPage = () => {
                     }}
                   >
                     <Avatar
-                      src={actualUser.photoURL}
+                      src={actualUser?.photoURL || ''}
                       sx={{
                         width: 50,
                         height: 50,
@@ -246,10 +252,10 @@ const LeaderboardPage = () => {
                         border: '3px solid white'
                       }}
                     >
-                      {actualUser.displayName?.[0]}
+                      {actualUser?.displayName?.[0] || 'U'}
                     </Avatar>
                     <Typography variant="body2" sx={{ fontWeight: 'bold', mb: 1 }}>
-                      {actualUser.displayName}
+                      {actualUser?.displayName || 'Unknown User'}
                     </Typography>
                     <Box sx={{ position: 'absolute', top: -10 }}>
                       {getRankIcon(actualIndex + 1)}
@@ -322,12 +328,12 @@ const LeaderboardPage = () => {
                       
                       <TableCell>
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Avatar src={user.photoURL} sx={{ width: 40, height: 40 }}>
-                            {user.displayName?.[0]}
+                          <Avatar src={user?.photoURL || ''} sx={{ width: 40, height: 40 }}>
+                            {user?.displayName?.[0] || 'U'}
                           </Avatar>
                           <Box>
                             <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                              {user.displayName}
+                              {user?.displayName || 'Unknown User'}
                               {isCurrentUser && (
                                 <Chip label="You" size="small" color="primary" sx={{ ml: 1 }} />
                               )}

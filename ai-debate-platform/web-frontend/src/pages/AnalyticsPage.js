@@ -75,7 +75,7 @@ const AnalyticsPage = () => {
       
       // Fetch user statistics
       const statsResponse = await api.get('/users/stats');
-      const stats = statsResponse.data.data;
+      const stats = statsResponse.data.data || {};
       setUserStats(stats);
 
       // Use real performance data from backend
