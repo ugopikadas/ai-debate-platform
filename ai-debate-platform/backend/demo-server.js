@@ -40,32 +40,16 @@ const demoDebates = [
     timeRemaining: 300,
     participants: [
       {
-        id: 'user-1',
-        name: 'Alice Johnson',
+        id: 'ai-proposition',
+        name: 'AI Agent',
         role: 'proposition',
-        type: 'human',
+        type: 'ai',
         avatar: null,
         joinedAt: new Date().toISOString()
       },
       {
-        id: 'demo-user-google-id',
-        name: 'Gopika Das',
-        role: 'proposition',
-        type: 'human',
-        avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-        joinedAt: new Date().toISOString()
-      },
-      {
-        id: 'demo-user-id',
-        name: 'Gopika Das',
-        role: 'proposition',
-        type: 'human',
-        avatar: null,
-        joinedAt: new Date().toISOString()
-      },
-      {
-        id: 'ai-1',
-        name: 'AI Debater',
+        id: 'ai-opposition',
+        name: 'AI Agent',
         role: 'opposition',
         type: 'ai',
         avatar: null,
@@ -108,34 +92,18 @@ const demoDebates = [
     timeRemaining: 180,
     participants: [
       {
-        id: 'user-2',
-        name: 'Charlie Brown',
+        id: 'ai-proposition-2',
+        name: 'AI Agent',
         role: 'proposition',
-        type: 'human',
+        type: 'ai',
         avatar: null,
         joinedAt: new Date().toISOString()
       },
       {
-        id: 'demo-user-google-id',
-        name: 'Gopika Das',
+        id: 'ai-opposition-2',
+        name: 'AI Agent',
         role: 'opposition',
-        type: 'human',
-        avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-        joinedAt: new Date().toISOString()
-      },
-      {
-        id: 'demo-user-id',
-        name: 'Gopika Das',
-        role: 'opposition',
-        type: 'human',
-        avatar: null,
-        joinedAt: new Date().toISOString()
-      },
-      {
-        id: 'user-3',
-        name: 'Diana Prince',
-        role: 'opposition',
-        type: 'human',
+        type: 'ai',
         avatar: null,
         joinedAt: new Date().toISOString()
       }
@@ -174,12 +142,19 @@ const demoDebates = [
 
 // AI Reply Generation Function
 function generateAIReply(debate, humanRole) {
+  console.log('🤖 Generating AI reply for human role:', humanRole);
+
   // Determine AI role (opposite of human)
   const aiRole = humanRole === 'proposition' ? 'opposition' : 'proposition';
 
   // Find AI participant
   const aiParticipant = debate.participants.find(p => p.role === aiRole && p.type === 'ai');
-  if (!aiParticipant) return;
+  console.log('🔍 AI participant found:', !!aiParticipant, aiParticipant?.name);
+
+  if (!aiParticipant) {
+    console.log('❌ No AI participant found for role:', aiRole);
+    return;
+  }
 
   // Generate AI response based on the debate topic and recent messages
   const aiResponses = {
@@ -188,14 +163,18 @@ function generateAIReply(debate, humanRole) {
       "The data clearly supports the efficiency gains from AI implementation in critical sectors.",
       "Human bias and emotional decision-making often lead to suboptimal outcomes in high-stakes situations.",
       "AI can process vast amounts of information simultaneously, leading to more informed decisions.",
-      "The track record of AI in medical diagnosis and financial analysis shows measurable improvements."
+      "The track record of AI in medical diagnosis and financial analysis shows measurable improvements.",
+      "Studies show AI reduces human error by up to 85% in critical decision-making scenarios.",
+      "AI operates without fatigue, ensuring consistent performance in high-pressure situations."
     ],
     opposition: [
       "Human judgment incorporates ethical considerations and contextual understanding that AI lacks.",
       "The complexity of real-world situations requires human empathy and moral reasoning.",
       "AI systems are prone to algorithmic bias and can perpetuate existing inequalities.",
       "Critical decisions affecting human lives require human accountability and responsibility.",
-      "The unpredictability of human creativity and intuition often leads to breakthrough solutions."
+      "The unpredictability of human creativity and intuition often leads to breakthrough solutions.",
+      "AI cannot understand the nuanced social and cultural contexts that influence decision-making.",
+      "Human oversight is essential to prevent AI from making decisions that lack moral consideration."
     ]
   };
 
@@ -218,7 +197,8 @@ function generateAIReply(debate, humanRole) {
   // Add AI message to debate
   debate.messages.push(aiMessage);
 
-  console.log(`AI (${aiRole}) replied: ${randomResponse.substring(0, 50)}...`);
+  console.log(`🤖 AI (${aiRole}) replied: "${randomResponse.substring(0, 50)}..."`);
+  console.log('📊 Total messages in debate:', debate.messages.length);
 }
 
 // Basic routes
@@ -326,41 +306,62 @@ app.post('/api/debates/:id/join', (req, res) => {
 
   const { role, userId } = req.body; // 'proposition' or 'opposition'
   // Use provided userId or generate a demo one
-  const actualUserId = userId || 'demo-user-' + Date.now();
+  const actualUserId = userId || 'demo-user-google-id';
   const userName = 'Gopika Das'; // Demo user name
 
-  // Check if this specific user is already in the debate
-  const existingUserParticipant = debate.participants.find(p => p.id === actualUserId);
-  if (existingUserParticipant) {
+  console.log('🎯 User joining debate:', { userId: actualUserId, role, userName });
+
+  // Check if this user is already in the debate (any role)
+  const existingUserIndex = debate.participants.findIndex(p => p.id === actualUserId);
+  if (existingUserIndex !== -1) {
     // Update their role instead of adding duplicate
-    existingUserParticipant.role = role;
+    debate.participants[existingUserIndex].role = role;
+    console.log('✅ Updated existing participant role to:', role);
     return res.json({
       success: true,
       data: {
         debate: debate,
-        participant: existingUserParticipant
+        participant: debate.participants[existingUserIndex]
       },
       message: `Successfully switched to ${role}`
     });
   }
 
-  // Add participant
-  const newParticipant = {
-    id: actualUserId,
-    name: userName,
-    role: role,
-    type: 'human',
-    avatar: null,
-    joinedAt: new Date().toISOString()
-  };
+  // Find AI agent in the requested role and replace it with human
+  const aiAgentIndex = debate.participants.findIndex(p => p.role === role && p.type === 'ai');
+  if (aiAgentIndex !== -1) {
+    // Replace AI with human
+    debate.participants[aiAgentIndex] = {
+      id: actualUserId,
+      name: userName,
+      role: role,
+      type: 'human',
+      avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+      joinedAt: new Date().toISOString()
+    };
+    console.log('🔄 Replaced AI agent with human in role:', role);
+  } else {
+    // No AI to replace, just add the human (shouldn't happen with our setup)
+    const newParticipant = {
+      id: actualUserId,
+      name: userName,
+      role: role,
+      type: 'human',
+      avatar: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+      joinedAt: new Date().toISOString()
+    };
+    debate.participants.push(newParticipant);
+    console.log('➕ Added new human participant:', role);
+  }
 
-  debate.participants.push(newParticipant);
+  // Find the participant that was just added/updated
+  const currentParticipant = debate.participants.find(p => p.id === actualUserId);
 
   res.json({
     success: true,
     data: {
       debate: debate,
-      participant: newParticipant
+      participant: currentParticipant
     },
     message: `Successfully joined as ${role}`
   });
@@ -387,8 +388,14 @@ app.delete('/api/debates/:id', (req, res) => {
 
 // Post message to debate
 app.post('/api/debates/:id/messages', (req, res) => {
+  console.log('📨 Received message request:', {
+    debateId: req.params.id,
+    body: req.body
+  });
+
   const debate = demoDebates.find(d => d.id === req.params.id);
   if (!debate) {
+    console.log('❌ Debate not found:', req.params.id);
     return res.status(404).json({
       success: false,
       message: 'Debate not found'
@@ -400,12 +407,20 @@ app.post('/api/debates/:id/messages', (req, res) => {
   const actualUserId = userId || 'demo-user-id';
   let participant = debate.participants.find(p => p.id === actualUserId);
 
+  console.log('🔍 Looking for participant:', {
+    actualUserId,
+    foundParticipant: !!participant,
+    allParticipants: debate.participants.map(p => ({ id: p.id, name: p.name, role: p.role }))
+  });
+
   // If not found, try to find any participant with the demo user name
   if (!participant) {
     participant = debate.participants.find(p => p.name === 'Gopika Das');
+    console.log('🔍 Fallback search by name:', !!participant);
   }
 
   if (!participant) {
+    console.log('❌ No participant found - user must join first');
     return res.status(400).json({
       success: false,
       message: 'You must join the debate first'
@@ -423,7 +438,9 @@ app.post('/api/debates/:id/messages', (req, res) => {
     phase: phase || debate.phase
   };
 
+  console.log('💬 Creating message:', newMessage);
   debate.messages.push(newMessage);
+  console.log('📝 Message added to debate. Total messages:', debate.messages.length);
 
   // Generate AI reply if the message is from a human
   if (participant.type === 'human') {

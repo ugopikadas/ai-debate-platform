@@ -236,6 +236,13 @@ const DebateRoomPage = () => {
   const handleSendMessage = async () => {
     if (!message.trim()) return;
 
+    console.log('🚀 Sending message:', {
+      message: message.trim(),
+      userId: user?.uid || 'demo-user-google-id',
+      userRole,
+      debateId: id
+    });
+
     try {
       // Always use REST API for reliability
       const response = await fetch(`http://localhost:5000/api/debates/${id}/messages`, {
@@ -250,25 +257,30 @@ const DebateRoomPage = () => {
         })
       });
 
+      console.log('📡 Response status:', response.status);
+
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('❌ Error response:', errorData);
         throw new Error(errorData.message || 'Failed to send message');
       }
 
       const result = await response.json();
-      console.log('Message sent successfully:', result);
+      console.log('✅ Message sent successfully:', result);
 
       // Clear the input immediately
       setMessage('');
       setIsTyping(false);
 
       // Refresh the debate to get the new message
+      console.log('🔄 Refreshing debate...');
       await dispatch(fetchDebateById(id));
+      console.log('✅ Debate refreshed');
 
       toast.success('Message sent successfully!');
 
     } catch (error) {
-      console.error('Failed to send message:', error);
+      console.error('💥 Failed to send message:', error);
       toast.error(error.message || 'Failed to send message');
     }
   };
